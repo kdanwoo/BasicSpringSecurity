@@ -1,16 +1,17 @@
 package com.example.basicspringsecurity.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import javax.servlet.Filter;
 
 /**
  * SpringSecurity에 대한 기본적인 설정들을 추가
@@ -22,8 +23,10 @@ import javax.servlet.Filter;
  * */
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+    private final UserDetailsService userDetailsService;
 
     @Override
     public void configure(WebSecurity web) throws Exception {
@@ -42,7 +45,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 // 로그인하는 경우에 대해 설정함
             .formLogin()
             // 로그인 페이지를 제공하는 URL을 설정함
-            .loginPage("/user/loginView")
+            .loginPage("/templates/user/loginView")
             // 로그인 성공 URL을 설정함
             .successForwardUrl("/index")
             // 로그인 실패 URL을 설정함
@@ -61,7 +64,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public CustomAuthenticationFilter customAuthenticationFilter() throws Exception {
         CustomAuthenticationFilter customAuthenticationFilter = new CustomAuthenticationFilter(authenticationManager());
-        customAuthenticationFilter.setFilterProcessesUrl("/user/login");
+        customAuthenticationFilter.setFilterProcessesUrl("/templates/user/login");
         customAuthenticationFilter.setAuthenticationSuccessHandler(customLoginSuccessHandler());
         customAuthenticationFilter.afterPropertiesSet();
         return customAuthenticationFilter;
@@ -72,6 +75,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         return new CustomLoginSuccessHandler();
     }
 
+    @Bean
+    public CustomAuthenticationProvider customAuthenticationProvider() {
+        return new CustomAuthenticationProvider(userDetailsService, bCryptPasswordEncoder());
+    }
 
+    @Override
+    public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) {
+        authenticationManagerBuilder.authenticationProvider(customAuthenticationProvider());
+    }
 
 }
